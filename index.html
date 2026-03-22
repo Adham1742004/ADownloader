@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ADownloader">
+<title>ADownloader – تحميل الفيديوهات</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131c;
+    --card: #1a1a27;
+    --border: rgba(255,255,255,0.07);
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --accent3: #43e97b;
+    --text: #f0f0ff;
+    --muted: #7b7b9a;
+    --glow: rgba(108,99,255,0.35);
+  }
+
+  html, body {
+    height: 100%; background: var(--bg); color: var(--text);
+    font-family: 'Cairo', sans-serif; overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(108,99,255,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 80%, rgba(255,101,132,0.09) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 50% 50%, rgba(67,233,123,0.06) 0%, transparent 60%);
+    animation: meshShift 12s ease-in-out infinite alternate;
+  }
+  @keyframes meshShift {
+    0%   { opacity: 1; transform: scale(1) rotate(0deg); }
+    100% { opacity: 0.7; transform: scale(1.08) rotate(2deg); }
+  }
+
+  .app {
+    position: relative; z-index: 1;
+    max-width: 500px; margin: 0 auto;
+    min-height: 100vh; display: flex; flex-direction: column;
+    padding: 0 0 60px;
+  }
+
+  /* HEADER */
+  header { padding: 52px 24px 24px; text-align: center; }
+  .logo-ring {
+    width: 76px; height: 76px; margin: 0 auto 16px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 40px var(--glow), 0 0 80px rgba(255,101,132,0.15);
+    animation: pulse 3s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 40px var(--glow), 0 0 80px rgba(255,101,132,0.15); }
+    50%      { box-shadow: 0 0 60px rgba(108,99,255,0.55), 0 0 100px rgba(255,101,132,0.25); }
+  }
+  .logo-ring svg { width: 36px; height: 36px; }
+  h1 { font-size: 30px; font-weight: 900; letter-spacing: -0.5px; }
+  h1 span { background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .tagline { margin-top: 6px; font-size: 13px; color: var(--muted); }
+
+  /* PLATFORMS */
+  .platforms {
+    display: flex; gap: 8px; justify-content: center;
+    padding: 0 24px 28px; flex-wrap: wrap;
+  }
+  .plat {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 14px;
+    font-size: 12px; color: var(--muted);
+  }
+  .plat .dot { width: 7px; height: 7px; border-radius: 50%; }
+
+  /* INPUT CARD */
+  .input-card {
+    margin: 0 16px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 24px; padding: 24px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+    animation: slideUp 0.5s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .input-label { font-size: 12px; color: var(--muted); margin-bottom: 10px; font-weight: 600; letter-spacing: 0.5px; }
+
+  .url-wrap {
+    display: flex; gap: 8px; align-items: center;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 4px 4px 4px 14px;
+    transition: border-color 0.2s;
+  }
+  .url-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,99,255,0.15); }
+
+  .url-input {
+    flex: 1; background: none; border: none; outline: none;
+    color: var(--text); font-family: 'Cairo', sans-serif;
+    font-size: 13px; padding: 10px 0;
+    direction: ltr; text-align: left;
+  }
+  .url-input::placeholder { color: var(--muted); }
+
+  .paste-btn {
+    background: rgba(108,99,255,0.15); border: none; cursor: pointer;
+    color: var(--accent); border-radius: 10px; padding: 8px 14px;
+    font-size: 12px; font-family: 'Cairo', sans-serif; font-weight: 700;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .paste-btn:hover { background: rgba(108,99,255,0.3); }
+
+  /* QUALITY OPTIONS */
+  .quality-section { margin-top: 18px; }
+  .quality-label { font-size: 12px; color: var(--muted); margin-bottom: 10px; font-weight: 600; }
+  .quality-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+  .q-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 4px; text-align: center;
+    cursor: pointer; transition: all 0.2s; font-family: 'Cairo', sans-serif;
+  }
+  .q-btn .res { font-size: 13px; font-weight: 700; display: block; color: var(--text); }
+  .q-btn.selected { border-color: var(--accent); background: rgba(108,99,255,0.15); }
+  .q-btn.selected .res { color: var(--accent); }
+  .q-btn:hover { border-color: rgba(108,99,255,0.5); transform: translateY(-1px); }
+
+  .fetch-btn {
+    width: 100%; margin-top: 4px;
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    border: none; border-radius: 14px; padding: 16px;
+    color: #fff; font-family: 'Cairo', sans-serif; font-size: 16px; font-weight: 700;
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 20px rgba(108,99,255,0.4);
+  }
+  .fetch-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(108,99,255,0.55); }
+  .fetch-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  /* LOADER */
+  .loader { display: none; text-align: center; padding: 30px 24px; }
+  .loader.active { display: block; }
+  .spinner {
+    width: 44px; height: 44px; margin: 0 auto 14px;
+    border: 3px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader p { color: var(--muted); font-size: 13px; }
+
+  /* ERROR */
+  .error-msg {
+    display: none; margin-top: 14px;
+    background: rgba(255,101,132,0.1); border: 1px solid rgba(255,101,132,0.25);
+    border-radius: 12px; padding: 12px 16px;
+    font-size: 12px; color: var(--accent2); text-align: center;
+  }
+  .error-msg.show { display: block; }
+
+  /* RESULT */
+  .result-card {
+    display: none; margin: 20px 16px 0;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 24px; overflow: hidden;
+    animation: slideUp 0.4s cubic-bezier(0.16,1,0.3,1) both;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  }
+  .result-card.show { display: block; }
+
+  .result-info { padding: 20px; }
+  .video-title { font-size: 15px; font-weight: 700; line-height: 1.5; margin-bottom: 6px; }
+  .video-platform { font-size: 12px; color: var(--muted); margin-bottom: 18px; display: flex; align-items: center; gap: 6px; }
+  .platform-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .dl-btn {
+    width: 100%; margin-bottom: 10px;
+    background: linear-gradient(135deg, var(--accent3), #00c9ff);
+    border: none; border-radius: 14px; padding: 15px;
+    color: #0a0a0f; font-family: 'Cairo', sans-serif; font-size: 15px; font-weight: 900;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(67,233,123,0.3);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    text-decoration: none;
+  }
+  .dl-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(67,233,123,0.45); }
+
+  .audio-btn {
+    width: 100%;
+    background: rgba(255,101,132,0.1); border: 1px solid rgba(255,101,132,0.25);
+    border-radius: 14px; padding: 13px;
+    color: var(--accent2); font-family: 'Cairo', sans-serif; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    text-decoration: none;
+  }
+  .audio-btn:hover { background: rgba(255,101,132,0.2); transform: translateY(-1px); }
+
+  /* HOW TO USE */
+  .how-card {
+    margin: 20px 16px 0;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 24px; padding: 20px;
+    animation: slideUp 0.6s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  .how-title { font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 14px; }
+  .how-step {
+    display: flex; align-items: flex-start; gap: 12px;
+    margin-bottom: 14px;
+  }
+  .step-num {
+    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(108,99,255,0.2); border: 1px solid rgba(108,99,255,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: var(--accent);
+  }
+  .step-text { font-size: 13px; color: var(--muted); line-height: 1.6; padding-top: 3px; }
+  .step-text strong { color: var(--text); }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #1e1e30; border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 20px; font-size: 13px; color: var(--text);
+    opacity: 0; transition: all 0.35s; white-space: nowrap; z-index: 999;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo-ring">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="23 7 16 12 23 17 23 7"/>
+        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+      </svg>
+    </div>
+    <h1>A<span>Downloader</span></h1>
+    <p class="tagline">حمّل أي فيديو في ثوانٍ</p>
+  </header>
+
+  <!-- PLATFORMS -->
+  <div class="platforms">
+    <div class="plat"><span class="dot" style="background:#ff0000"></span> YouTube</div>
+    <div class="plat"><span class="dot" style="background:#e1306c"></span> Instagram</div>
+    <div class="plat"><span class="dot" style="background:#000000;border:1px solid #555"></span> TikTok</div>
+    <div class="plat"><span class="dot" style="background:#1877f2"></span> Facebook</div>
+    <div class="plat"><span class="dot" style="background:#1da1f2"></span> Twitter/X</div>
+  </div>
+
+  <!-- INPUT CARD -->
+  <div class="input-card">
+    <div class="input-label">📎 الصق رابط الفيديو</div>
+    <div class="url-wrap">
+      <input class="url-input" id="urlInput" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+      <button class="paste-btn" onclick="pasteURL()">لصق</button>
+    </div>
+
+    <!-- QUALITY -->
+    <div class="quality-section">
+      <div class="quality-label">🎬 جودة الفيديو</div>
+      <div class="quality-grid">
+        <div class="q-btn" onclick="selectQ(this,'2160')"><span class="res">4K</span></div>
+        <div class="q-btn selected" onclick="selectQ(this,'1080')"><span class="res">1080p</span></div>
+        <div class="q-btn" onclick="selectQ(this,'720')"><span class="res">720p</span></div>
+        <div class="q-btn" onclick="selectQ(this,'480')"><span class="res">480p</span></div>
+      </div>
+    </div>
+
+    <div class="error-msg" id="errorMsg">⚠️ الرجاء إدخال رابط صحيح</div>
+    <button class="fetch-btn" id="fetchBtn" onclick="handleDownload()">⬇️ تحميل الفيديو</button>
+  </div>
+
+  <!-- LOADER -->
+  <div class="loader" id="loader">
+    <div class="spinner"></div>
+    <p>جارٍ معالجة الرابط...</p>
+  </div>
+
+  <!-- RESULT -->
+  <div class="result-card" id="resultCard">
+    <div class="result-info">
+      <div class="video-title" id="videoTitle"></div>
+      <div class="video-platform" id="videoPlatform"></div>
+      <a class="dl-btn" id="dlBtn" href="#" target="_blank">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        تحميل الفيديو الآن
+      </a>
+      <a class="audio-btn" id="audioBtn" href="#" target="_blank">
+        🎵 تحميل الصوت فقط (MP3)
+      </a>
+    </div>
+  </div>
+
+  <!-- HOW TO USE -->
+  <div class="how-card">
+    <div class="how-title">📖 كيفية الاستخدام</div>
+    <div class="how-step">
+      <div class="step-num">1</div>
+      <div class="step-text"><strong>انسخ رابط الفيديو</strong> من YouTube أو TikTok أو Instagram أو غيرها</div>
+    </div>
+    <div class="how-step">
+      <div class="step-num">2</div>
+      <div class="step-text"><strong>الصق الرابط</strong> في الخانة وحدد الجودة المناسبة</div>
+    </div>
+    <div class="how-step">
+      <div class="step-num">3</div>
+      <div class="step-text"><strong>اضغط تحميل</strong> وانتظر ثواني — الفيديو هينزل مباشرةً</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  let selectedQuality = '1080';
+
+  function selectQ(el, q) {
+    document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedQuality = q;
+  }
+
+  async function pasteURL() {
+    try {
+      const text = await navigator.clipboard.readText();
+      document.getElementById('urlInput').value = text;
+      showToast('✅ تم لصق الرابط');
+    } catch {
+      showToast('اضغط مطولاً على الخانة للصق');
+    }
+  }
+
+  function detectPlatform(url) {
+    url = url.toLowerCase();
+    if (url.includes('youtube') || url.includes('youtu.be')) return { name: 'YouTube', color: '#ff0000' };
+    if (url.includes('instagram')) return { name: 'Instagram', color: '#e1306c' };
+    if (url.includes('tiktok')) return { name: 'TikTok', color: '#69c9d0' };
+    if (url.includes('facebook') || url.includes('fb.watch')) return { name: 'Facebook', color: '#1877f2' };
+    if (url.includes('twitter') || url.includes('x.com')) return { name: 'Twitter/X', color: '#1da1f2' };
+    return { name: 'فيديو', color: '#6c63ff' };
+  }
+
+  function buildCobaltUrl(videoUrl, audioOnly = false) {
+    const base = 'https://adownloader-production.up.railway.app';
+    if (audioOnly) return `${base}/api/download?url=${encodeURIComponent(videoUrl)}&audio=true`;
+    return `${base}/api/download?url=${encodeURIComponent(videoUrl)}&quality=${selectedQuality}`;
+  }
+
+  async function handleDownload() {
+    const url = document.getElementById('urlInput').value.trim();
+    const errorEl = document.getElementById('errorMsg');
+    const loader = document.getElementById('loader');
+    const resultCard = document.getElementById('resultCard');
+    const fetchBtn = document.getElementById('fetchBtn');
+
+    errorEl.classList.remove('show');
+    resultCard.classList.remove('show');
+
+    if (!url || !url.startsWith('http')) {
+      errorEl.classList.add('show');
+      return;
+    }
+
+    // Show loader
+    loader.classList.add('active');
+    fetchBtn.disabled = true;
+
+    // Simulate processing (cobalt doesn't need pre-fetch)
+    await new Promise(r => setTimeout(r, 1200));
+    loader.classList.remove('active');
+    fetchBtn.disabled = false;
+
+    const platform = detectPlatform(url);
+
+    // Build download links via cobalt.tools API
+    const dlUrl = buildCobaltUrl(url, false);
+    const audioUrl = buildCobaltUrl(url, true);
+
+    // Show result
+    document.getElementById('videoTitle').textContent = '✅ الرابط جاهز للتحميل';
+    document.getElementById('videoPlatform').innerHTML = `
+      <span class="platform-dot" style="background:${platform.color}"></span>
+      ${platform.name} · جودة ${selectedQuality === '2160' ? '4K' : selectedQuality + 'p'}
+    `;
+
+    // Set cobalt.tools links
+    document.getElementById('dlBtn').href = dlUrl;
+    document.getElementById('audioBtn').href = audioUrl;
+
+    resultCard.classList.add('show');
+    resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    showToast('🎉 اضغط على الزر لبدء التحميل');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // Enter key support
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('urlInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') handleDownload();
+    });
+  });
+</script>
+</body>
+</html>
