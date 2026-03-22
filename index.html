@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Video Downloader</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3e;
+      --accent: #6c63ff;
+      --accent-hover: #5a52e0;
+      --accent-light: rgba(108, 99, 255, 0.12);
+      --text: #e8e9f0;
+      --muted: #6b6f8a;
+      --success: #22c55e;
+      --error: #ef4444;
+      --warning: #f59e0b;
+      --radius: 10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px 80px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      color: var(--muted);
+      margin-top: 6px;
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 100%;
+      max-width: 680px;
+    }
+
+    .card + .card { margin-top: 16px; }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+
+    input[type="text"], select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.95rem;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="text"]:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    select { cursor: pointer; }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .field { display: flex; flex-direction: column; }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    button {
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.93rem;
+      font-weight: 600;
+      padding: 10px 20px;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      flex: 1;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+    .btn-secondary {
+      background: var(--border);
+      color: var(--text);
+    }
+    .btn-secondary:hover:not(:disabled) { background: #32364a; }
+
+    /* Info panel */
+    #info-panel {
+      display: none;
+      margin-top: 16px;
+      padding: 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 6px 16px;
+      font-size: 0.88rem;
+    }
+
+    .info-grid dt { color: var(--muted); white-space: nowrap; }
+    .info-grid dd { word-break: break-word; }
+
+    /* Jobs list */
+    #jobs-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .job-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+
+    .job-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .job-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 400px;
+    }
+
+    .job-url {
+      font-size: 0.78rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 99px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-queued    { background: rgba(107,111,138,0.2); color: var(--muted); }
+    .badge-downloading { background: rgba(108,99,255,0.2); color: var(--accent); }
+    .badge-processing  { background: rgba(245,158,11,0.2); color: var(--warning); }
+    .badge-done      { background: rgba(34,197,94,0.2); color: var(--success); }
+    .badge-error     { background: rgba(239,68,68,0.2); color: var(--error); }
+
+    .job-progress {
+      margin-top: 10px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .progress-bar-wrap {
+      height: 4px;
+      background: var(--border);
+      border-radius: 99px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 99px;
+      transition: width 0.4s;
+    }
+
+    .job-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .job-actions button { padding: 6px 14px; font-size: 0.82rem; }
+
+    .btn-download { background: var(--success); color: #fff; }
+    .btn-download:hover { background: #16a34a; }
+
+    .btn-delete { background: rgba(239,68,68,0.15); color: var(--error); }
+    .btn-delete:hover { background: rgba(239,68,68,0.25); }
+
+    .error-text { color: var(--error); font-size: 0.82rem; margin-top: 6px; }
+
+    .empty-state {
+      text-align: center;
+      padding: 36px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .section-header h2 {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .refresh-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 5px 12px;
+      font-size: 0.8rem;
+    }
+    .refresh-btn:hover { background: var(--border); color: var(--text); }
+
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .flash {
+      margin-bottom: 16px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      display: none;
+    }
+    .flash-error { background: rgba(239,68,68,0.12); color: var(--error); border: 1px solid rgba(239,68,68,0.25); }
+    .flash-success { background: rgba(34,197,94,0.12); color: var(--success); border: 1px solid rgba(34,197,94,0.25); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Video Downloader</h1>
+  <p>Paste a YouTube or other video URL to download</p>
+</header>
+
+<div id="flash" class="flash"></div>
+
+<div class="card" style="max-width:680px;width:100%">
+  <div class="field">
+    <label for="url-input">Video URL</label>
+    <input type="text" id="url-input" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off" />
+  </div>
+
+  <div class="row">
+    <div class="field">
+      <label for="format-select">Format</label>
+      <select id="format-select">
+        <option value="video">Video</option>
+        <option value="audio">Audio only</option>
+      </select>
+    </div>
+    <div class="field" id="quality-field">
+      <label for="quality-select">Quality</label>
+      <select id="quality-select">
+        <option value="best">Best</option>
+        <option value="720p">720p</option>
+        <option value="480p">480p</option>
+        <option value="360p">360p</option>
+      </select>
+    </div>
+    <div class="field" id="container-field">
+      <label for="container-select">Container</label>
+      <select id="container-select">
+        <option value="mp4">mp4</option>
+        <option value="webm">webm</option>
+        <option value="mkv">mkv</option>
+      </select>
+    </div>
+    <div class="field" id="audio-codec-field" style="display:none">
+      <label for="audio-codec-select">Audio codec</label>
+      <select id="audio-codec-select">
+        <option value="mp3">mp3</option>
+        <option value="m4a">m4a</option>
+        <option value="opus">opus</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-secondary" id="info-btn" onclick="fetchInfo()">Get Info</button>
+    <button class="btn-primary" id="download-btn" onclick="startDownload()">Download</button>
+  </div>
+
+  <div id="info-panel">
+    <dl class="info-grid" id="info-grid"></dl>
+  </div>
+</div>
+
+<div class="card" style="max-width:680px;width:100%;margin-top:24px">
+  <div class="section-header">
+    <h2>Downloads</h2>
+    <button class="btn-secondary refresh-btn" onclick="loadJobs()">Refresh</button>
+  </div>
+  <div id="jobs-list"><div class="empty-state">No downloads yet</div></div>
+</div>
+
+<script>
+  const BASE = '';
+  let pollTimers = {};
+
+  const formatSelect = document.getElementById('format-select');
+  const qualityField = document.getElementById('quality-field');
+  const containerField = document.getElementById('container-field');
+  const audioCodecField = document.getElementById('audio-codec-field');
+
+  formatSelect.addEventListener('change', () => {
+    const isAudio = formatSelect.value === 'audio';
+    qualityField.style.display = isAudio ? 'none' : '';
+    containerField.style.display = isAudio ? 'none' : '';
+    audioCodecField.style.display = isAudio ? '' : 'none';
+  });
+
+  function showFlash(msg, type = 'error') {
+    const el = document.getElementById('flash');
+    el.className = `flash flash-${type}`;
+    el.textContent = msg;
+    el.style.display = 'block';
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.style.display = 'none'; }, 5000);
+  }
+
+  function formatDuration(secs) {
+    if (!secs) return '—';
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    return h ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`;
+  }
+
+  function formatBytes(b) {
+    if (!b) return '—';
+    if (b > 1e9) return (b/1e9).toFixed(2) + ' GB';
+    if (b > 1e6) return (b/1e6).toFixed(1) + ' MB';
+    return (b/1e3).toFixed(0) + ' KB';
+  }
+
+  async function fetchInfo() {
+    const url = document.getElementById('url-input').value.trim();
+    if (!url) { showFlash('Please enter a URL'); return; }
+
+    const btn = document.getElementById('info-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Fetching…';
+
+    const panel = document.getElementById('info-panel');
+    panel.style.display = 'none';
+
+    try {
+      const res = await fetch(`${BASE}/api/info`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      const data = await res.json();
+      if (!res.ok) { showFlash(data.error || 'Failed to fetch info'); return; }
+
+      const grid = document.getElementById('info-grid');
+      grid.innerHTML = '';
+      const rows = [
+        ['Title', data.title || '—'],
+        ['Duration', formatDuration(data.duration)],
+        ['Uploader', data.uploader || '—'],
+        ['Upload date', data.upload_date ? data.upload_date.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3') : '—'],
+        ['Views', data.view_count ? Number(data.view_count).toLocaleString() : '—'],
+        ['Formats available', data.formats?.length || 0],
+      ];
+      rows.forEach(([k, v]) => {
+        grid.innerHTML += `<dt>${k}</dt><dd>${v}</dd>`;
+      });
+      panel.style.display = 'block';
+    } catch (e) {
+      showFlash('Network error: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Get Info';
+    }
+  }
+
+  async function startDownload() {
+    const url = document.getElementById('url-input').value.trim();
+    if (!url) { showFlash('Please enter a URL'); return; }
+
+    const format = document.getElementById('format-select').value;
+    const body = {
+      url,
+      format,
+      quality: document.getElementById('quality-select').value,
+      container: document.getElementById('container-select').value,
+      audio_codec: document.getElementById('audio-codec-select').value,
+    };
+
+    const btn = document.getElementById('download-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Starting…';
+
+    try {
+      const res = await fetch(`${BASE}/api/download`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok) { showFlash(data.error || 'Failed to start download'); return; }
+
+      showFlash('Download started!', 'success');
+      document.getElementById('url-input').value = '';
+      document.getElementById('info-panel').style.display = 'none';
+      await loadJobs();
+      pollJob(data.job_id);
+    } catch (e) {
+      showFlash('Network error: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Download';
+    }
+  }
+
+  function pollJob(jobId) {
+    if (pollTimers[jobId]) return;
+    pollTimers[jobId] = setInterval(async () => {
+      try {
+        const res = await fetch(`${BASE}/api/status/${jobId}`);
+        const data = await res.json();
+        if (!res.ok) { clearInterval(pollTimers[jobId]); delete pollTimers[jobId]; return; }
+        updateJobCard(data);
+        if (data.status === 'done' || data.status === 'error') {
+          clearInterval(pollTimers[jobId]);
+          delete pollTimers[jobId];
+        }
+      } catch { }
+    }, 1500);
+  }
+
+  async function loadJobs() {
+    try {
+      const res = await fetch(`${BASE}/api/jobs`);
+      const jobs = await res.json();
+      const list = document.getElementById('jobs-list');
+      if (!jobs.length) {
+        list.innerHTML = '<div class="empty-state">No downloads yet</div>';
+        return;
+      }
+      jobs.forEach(job => {
+        if (!document.getElementById(`job-${job.job_id}`)) {
+          const el = document.createElement('div');
+          el.id = `job-${job.job_id}`;
+          el.className = 'job-item';
+          list.prepend(el);
+        }
+        updateJobCard(job);
+        if (job.status !== 'done' && job.status !== 'error') pollJob(job.job_id);
+      });
+    } catch { }
+  }
+
+  function updateJobCard(job) {
+    let el = document.getElementById(`job-${job.job_id}`);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = `job-${job.job_id}`;
+      el.className = 'job-item';
+      const list = document.getElementById('jobs-list');
+      const empty = list.querySelector('.empty-state');
+      if (empty) empty.remove();
+      list.prepend(el);
+    }
+
+    const progress = job.progress || {};
+    const percent = progress.percent ? parseFloat(progress.percent) : null;
+    const speed = progress.speed ? formatBytes(progress.speed) + '/s' : null;
+    const eta = progress.eta ? progress.eta + 's' : null;
+
+    let progressHtml = '';
+    if (job.status === 'downloading') {
+      const pct = percent ?? 0;
+      progressHtml = `
+        <div class="job-progress">
+          ${percent !== null ? percent.toFixed(1) + '%' : '…'}
+          ${speed ? ` · ${speed}` : ''}
+          ${eta ? ` · ETA ${eta}` : ''}
+          <div class="progress-bar-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
+        </div>`;
+    } else if (job.status === 'processing') {
+      progressHtml = `<div class="job-progress">Processing…</div>`;
+    }
+
+    let actionsHtml = '';
+    if (job.status === 'done') {
+      actionsHtml = `
+        <div class="job-actions">
+          <button class="btn-download" onclick="downloadFile('${job.job_id}')">Download file</button>
+          <button class="btn-delete" onclick="deleteJob('${job.job_id}')">Delete</button>
+        </div>`;
+    } else if (job.status === 'error') {
+      actionsHtml = `
+        <div class="error-text">${job.error || 'Unknown error'}</div>
+        <div class="job-actions"><button class="btn-delete" onclick="deleteJob('${job.job_id}')">Remove</button></div>`;
+    }
+
+    const displayTitle = job.title || job.url || job.job_id;
+    const displayUrl = job.title ? job.url : '';
+
+    el.innerHTML = `
+      <div class="job-header">
+        <div style="overflow:hidden">
+          <div class="job-title" title="${displayTitle}">${displayTitle}</div>
+          ${displayUrl ? `<div class="job-url">${displayUrl}</div>` : ''}
+        </div>
+        <span class="badge badge-${job.status}">${job.status}</span>
+      </div>
+      ${progressHtml}
+      ${actionsHtml}
+    `;
+  }
+
+  function downloadFile(jobId) {
+    window.location.href = `${BASE}/api/file/${jobId}`;
+  }
+
+  async function deleteJob(jobId) {
+    clearInterval(pollTimers[jobId]);
+    delete pollTimers[jobId];
+    await fetch(`${BASE}/api/jobs/${jobId}`, { method: 'DELETE' });
+    const el = document.getElementById(`job-${jobId}`);
+    if (el) el.remove();
+    if (!document.querySelector('.job-item')) {
+      document.getElementById('jobs-list').innerHTML = '<div class="empty-state">No downloads yet</div>';
+    }
+  }
+
+  document.getElementById('url-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') startDownload();
+  });
+
+  loadJobs();
+</script>
+</body>
+</html>
